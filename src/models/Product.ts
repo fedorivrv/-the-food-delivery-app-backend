@@ -1,11 +1,18 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export type ProductCategory = 'Burgers' | 'Chicken' | 'Pizza' | 'Sushi' | 'Drinks' | 'Desserts' | 'Sides' | 'Salads';
+
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+  'Burgers', 'Chicken', 'Pizza', 'Sushi', 'Drinks', 'Desserts', 'Sides', 'Salads',
+];
+
 export interface IProduct extends Document {
   name: string;
   price: number;
   description?: string;
   imageUrl?: string;
   shopId: mongoose.Types.ObjectId;
+  category: ProductCategory;
 }
 
 const ProductSchema = new Schema<IProduct>(
@@ -15,6 +22,7 @@ const ProductSchema = new Schema<IProduct>(
     description: { type: String, trim: true },
     imageUrl: { type: String },
     shopId: { type: Schema.Types.ObjectId, ref: 'Shop', required: true },
+    category: { type: String, enum: PRODUCT_CATEGORIES, required: true },
   },
   { timestamps: true }
 );
