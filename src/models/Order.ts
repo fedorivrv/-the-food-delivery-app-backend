@@ -1,10 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 interface OrderItem {
-  productId: mongoose.Types.ObjectId;
-  name: string;
-  price: number;
-  quantity: number;
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  name: String,
+  price: Number,
+  image: String,
+  quantity: Number,
 }
 
 interface CustomerInfo {
