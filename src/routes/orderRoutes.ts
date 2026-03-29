@@ -6,11 +6,12 @@ import {
 } from '../controllers/orderController';
 import { validate } from '../middleware/validate';
 import { orderSchema } from '../schemas/orderSchema';
+import { protect } from '../middleware/auth';
 
 const router = Router();
 
 router.post('/', validate(orderSchema), createOrder);
-router.get('/', getAllOrders);
+router.get('/', protect, getAllOrders);
 router.get('/search', searchOrders);
 
 export default router;

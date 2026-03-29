@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
 import { connectDB } from './lib/db';
+import authRoutes from './routes/authRoutes';
 import shopRoutes from './routes/shopRoutes';
 import orderRoutes from './routes/orderRoutes';
 import { errorHandler } from './middleware/errorHandler';
@@ -33,6 +34,7 @@ app.use(express.json());
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+app.use('/api/auth', authRoutes);
 
 app.use('/api/shops', shopRoutes);
 app.use('/api/orders', orderRoutes);
