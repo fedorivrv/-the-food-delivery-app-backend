@@ -1,83 +1,55 @@
-import { Request, Response } from 'express';
-import { Order } from '../models/Order';
+import { Request, Response, NextFunction } from 'express';
+import * as orderService from '../services/orderService';
+import { AppError } from '../errors/AppError';
 import mongoose from 'mongoose';
 
-function validateOrderBody(body: Record<string, unknown>): string | null {
-  const { items, customerInfo, totalPrice } = body as {
-    items: unknown[];
-    customerInfo: Record<string, string>;
-    totalPrice: number;
-  };
-
-  if (!Array.isArray(items) || items.length === 0)
-    return 'Order must contain at least one item';
-  if (!customerInfo || typeof customerInfo !== 'object')
-    return 'Customer info is required';
-
-  const { name, email, phone, address } = customerInfo;
-  if (!name || name.trim().length < 2) return 'Valid name is required';
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Valid email is required';
-  if (!phone || !/^\+?[\d\s\-()]{7,15}$/.test(phone)) return 'Valid phone is required';
-  if (!address || address.trim().length < 10) return 'Valid address is required';
-  if (typeof totalPrice !== 'number' || totalPrice < 0) return 'Valid total price is required';
-
-  return null;
-}
-
-export async function createOrder(req: Request, res: Response): Promise<void> {
+//CREATE
+export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const validationError = validateOrderBody(req.body);
-    if (validationError) { res.status(400).json({ message: validationError }); return; }
-    const order = new Order(req.body);
-    await order.save();
-    res.status(201).json({ message: 'Order created successfully', orderId: order._id });
+    const order = await orderService.createOrder(req.body);
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      orderId: order._id,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to create order', error });
+    next(error);
   }
-}
+};
 
-export async function getAllOrders(req: Request, res: Response): Promise<void> {
+// GET ALL 
+export const getAllOrders = async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await orderService.getAllOrders();
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders', error });
+    next(error);
   }
-}
+};
 
-// Search orders by email+phone OR by orderId
-export async function searchOrders(req: Request, res: Response): Promise<void> {
+//  SEARCH
+export const searchOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, phone, orderId } = req.query as Record<string, string>;
 
-    // Search by Order ID
+    // by ID
     if (orderId) {
       if (!mongoose.Types.ObjectId.isValid(orderId)) {
-        res.status(400).json({ message: 'Invalid order ID format' });
-        return;
+        throw new AppError('Invalid order ID format', 400);
       }
-      const order = await Order.findById(orderId);
-      res.json(order ? [order] : []);
-      return;
+
+      const order = await orderService.findOrderById(orderId);
+      return res.json(order ? [order] : []);
     }
 
-    // Search by email + phone
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      res.status(400).json({ message: 'Valid email is required' });
-      return;
-    }
-    if (!phone || !/^\+?[\d\s\-()]{7,15}$/.test(phone)) {
-      res.status(400).json({ message: 'Valid phone number is required' });
-      return;
+    // by email + phone
+    if (!email || !phone) {
+      throw new AppError('Email and phone are required', 400);
     }
 
-    const orders = await Order.find({
-      'customerInfo.email': email.toLowerCase().trim(),
-      'customerInfo.phone': { $regex: phone.replace(/[\s\-()]/g, '').replace(/\+/, '\\+'), $options: 'i' },
-    }).sort({ createdAt: -1 }).limit(50);
-
+    const orders = await orderService.searchOrdersByCustomer(email, phone);
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to search orders', error });
+    next(error);
   }
-}
+};
