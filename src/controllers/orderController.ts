@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Order } from '../models/Order';
+import mongoose from 'mongoose';
 
 function validateOrderBody(body: Record<string, unknown>): string | null {
   const { items, customerInfo, totalPrice } = body as {
@@ -27,7 +28,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   try {
     const validationError = validateOrderBody(req.body);
     if (validationError) { res.status(400).json({ message: validationError }); return; }
-
     const order = new Order(req.body);
     await order.save();
     res.status(201).json({ message: 'Order created successfully', orderId: order._id });
@@ -45,19 +45,39 @@ export async function getAllOrders(req: Request, res: Response): Promise<void> {
   }
 }
 
-// Get orders by customer email (for order history page)
-export async function getOrdersByEmail(req: Request, res: Response): Promise<void> {
+// Search orders by email+phone OR by orderId
+export async function searchOrders(req: Request, res: Response): Promise<void> {
   try {
-    const { email } = req.params;
+    const { email, phone, orderId } = req.query as Record<string, string>;
+
+    // Search by Order ID
+    if (orderId) {
+      if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        res.status(400).json({ message: 'Invalid order ID format' });
+        return;
+      }
+      const order = await Order.findById(orderId);
+      res.json(order ? [order] : []);
+      return;
+    }
+
+    // Search by email + phone
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       res.status(400).json({ message: 'Valid email is required' });
       return;
     }
-    const orders = await Order.find({ 'customerInfo.email': email.toLowerCase() })
-      .sort({ createdAt: -1 })
-      .limit(50);
+    if (!phone || !/^\+?[\d\s\-()]{7,15}$/.test(phone)) {
+      res.status(400).json({ message: 'Valid phone number is required' });
+      return;
+    }
+
+    const orders = await Order.find({
+      'customerInfo.email': email.toLowerCase().trim(),
+      'customerInfo.phone': { $regex: phone.replace(/[\s\-()]/g, '').replace(/\+/, '\\+'), $options: 'i' },
+    }).sort({ createdAt: -1 }).limit(50);
+
     res.json(orders);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch orders', error });
+    res.status(500).json({ message: 'Failed to search orders', error });
   }
 }
