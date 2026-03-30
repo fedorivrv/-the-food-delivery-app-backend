@@ -1,95 +1,117 @@
-# Food Delivery — Backend
+# Food Delivery — Backend (REST API)
 
-Built with **Express.js**, **TypeScript**, **MongoDB** (Mongoose).
+Express + TypeScript + MongoDB (Mongoose). Includes basic security middleware (Helmet, rate limiting) and request validation (Zod).
 
-## Getting Started
+## Requirements
+
+- Node.js 20+
+- MongoDB (local or Atlas)
+
+## Quick start
 
 ```bash
-# Install dependencies
 npm install
 
-# Seed the database with sample data
+# 1) Create env file
+cp .env.example .env
+
+# 2) (Optional) Seed sample data
 npm run seed
 
-# Run dev server (with hot reload)
+# 3) Run dev server (hot reload)
 npm run dev
-
-# Build for production
-npm run build
-npm start
 ```
 
-Server runs at **http://localhost:4000**
+Server: `http://localhost:4000`  
+Health: `GET /health`
 
-## API Endpoints
+## Environment variables
+
+Create `.env` from `.env.example`.
+
+| Variable | Required | Example | Notes |
+|---|---:|---|---|
+| `PORT` | no | `4000` | Server port |
+| `MONGODB_URI` | yes | `mongodb://localhost:27017/food-delivery` | Mongo connection |
+| `FRONTEND_URL` | no | `http://localhost:3000` | CORS allowed origin |
+| `JWT_SECRET` | yes | `change-me-in-prod` | Used to sign/verify JWT |
+
+## Scripts
+
+```bash
+npm run dev     # hot reload
+npm run build   # tsc -> dist/
+npm start       # run dist
+npm run seed    # seed sample shops/products
+```
+
+## API
+
+Base URL: `/api`
+
+### Auth
+
+- **POST** `/api/auth/login`
+
+Request:
+
+```json
+{ "email": "user@example.com", "password": "anything" }
+```
+
+Response:
+
+```json
+{ "accessToken": "jwt...", "user": { "email": "user@example.com" } }
+```
+
+Note: current implementation is demo-style (no real password verification).
 
 ### Shops
 
-| Method | Endpoint                    | Description                  |
-|--------|-----------------------------|------------------------------|
-| GET    | `/api/shops`                | Get all shops                |
-| GET    | `/api/shops/:id`            | Get shop by ID               |
-| GET    | `/api/shops/:id/products`   | Get all products for a shop  |
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/shops` | List shops |
+| GET | `/api/shops/:id` | Get shop by id |
+| GET | `/api/shops/:id/products` | Get products for shop (supports `categories`, `sort`, `page`, `limit`) |
 
 ### Orders
 
-| Method | Endpoint        | Description           |
-|--------|-----------------|-----------------------|
-| POST   | `/api/orders`   | Create a new order    |
-| GET    | `/api/orders`   | Get all orders        |
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/orders` | Create order |
+| GET | `/api/orders` | List all orders (**protected**) |
+| GET | `/api/orders/search` | Find orders by `orderId` OR by `email`+`phone` |
 
-### Health
+#### POST `/api/orders`
 
-| Method | Endpoint    | Description        |
-|--------|-------------|--------------------|
-| GET    | `/health`   | Health check       |
-
-## POST /api/orders — Request Body
+Request:
 
 ```json
 {
-  "items": [
-    {
-      "productId": "664abc123...",
-      "name": "Big Big Burger",
-      "price": 8.99,
-      "quantity": 2
-    }
-  ],
+  "items": [{ "productId": "664abc1234567890abcd1234", "quantity": 2 }],
   "customerInfo": {
     "name": "John Doe",
     "email": "john@example.com",
     "phone": "+1 234 567 8900",
     "address": "123 Main St, New York, USA"
-  },
-  "totalPrice": 17.98
+  }
 }
 ```
 
-## Project Structure
+Response:
 
-```
-src/
-├── index.ts              # Express app + server bootstrap
-├── lib/
-│   └── db.ts             # MongoDB connection
-├── models/
-│   ├── Shop.ts           # Shop schema
-│   ├── Product.ts        # Product schema (indexed by shopId)
-│   └── Order.ts          # Order schema with nested CustomerInfo
-├── controllers/
-│   ├── shopController.ts
-│   └── orderController.ts
-├── routes/
-│   ├── shopRoutes.ts
-│   └── orderRoutes.ts
-└── seed.ts               # Sample data seeder
+```json
+{ "message": "Order created successfully", "orderId": "..." }
 ```
 
-## Environment Variables
+## Error format
 
-| Variable        | Default                                        | Description            |
-|-----------------|------------------------------------------------|------------------------|
-| `PORT`          | `4000`                                         | Server port            |
-| `MONGODB_URI`   | `mongodb://localhost:27017/food-delivery`      | MongoDB connection URI  |
-| `FRONTEND_URL`  | `http://localhost:3000`                        | CORS allowed origin    |
+Most errors are returned as:
+
+```json
+{
+  "message": "Validation failed",
+  "error": { "message": "Validation failed", "code": "VALIDATION_ERROR", "details": [] }
+}
+```
