@@ -25,7 +25,7 @@ app.use(
   cors({  
     origin: [
       'http://localhost:3000',
-      'https://the-food-delivery-app-backend.onrender.com/',
+      'https://the-food-delivery-app-frontend.vercel.app/',
     ],   
     credentials: true,
   })
