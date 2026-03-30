@@ -26,9 +26,7 @@ app.use(
     origin: [
       'http://localhost:3000',
       'https://the-food-delivery-app-frontend-n05rjvet2.vercel.app',
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    ],   
     credentials: true,
   })
 );
