@@ -22,10 +22,10 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use(
-  cors({
+  cors({  
     origin: [
       'http://localhost:3000',
-      'https://the-food-delivery-app-frontend-n05rjvet2.vercel.app',
+      'https://the-food-delivery-app-backend.onrender.com/',
     ],   
     credentials: true,
   })
