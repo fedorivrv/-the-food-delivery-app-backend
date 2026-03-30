@@ -21,13 +21,13 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://the-food-delivery-app-frontend-n05rjvet2.vercel.app'
+  ],
+  credentials: true
+}));
 
 app.use(express.json());
 
