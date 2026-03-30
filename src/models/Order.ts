@@ -4,7 +4,7 @@ interface OrderItem {
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   name: String,
   price: Number,
-  image: String,
+  imageUrl: String,
   quantity: Number,
 }
 
@@ -27,6 +27,7 @@ const OrderItemSchema = new Schema<OrderItem>(
     productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     name: { type: String, required: true },
     price: { type: Number, required: true },
+    imageUrl: { type: String },
     quantity: { type: Number, required: true, min: 1 },
   },
   { _id: false }

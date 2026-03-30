@@ -4,7 +4,10 @@ import { signToken } from '../utils/jwt';
 export const login = (req: Request, res: Response) => {
   const { email } = req.body;
 
-  const token = signToken({ email });
+  const accessToken = signToken({ email });
 
-  res.json({ token });
+  res.json({
+    accessToken,
+    user: { email },
+  });
 };

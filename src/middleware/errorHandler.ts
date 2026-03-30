@@ -1,15 +1,36 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError } from 'zod';
+import { AppError } from '../errors/AppError';
 
-export const errorHandler = (err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
+function toPublicError(err: unknown): AppError {
+  if (err instanceof AppError) return err;
 
-  if (err.isOperational) {
-    return res.status(err.statusCode).json({
-      message: err.message,
+  if (err instanceof ZodError) {
+    return new AppError('Validation failed', 400, {
+      code: 'VALIDATION_ERROR',
+      details: err.issues.map((i) => ({
+        path: i.path.join('.'),
+        message: i.message,
+        code: i.code,
+      })),
     });
   }
 
-  return res.status(500).json({
-    message: 'Internal Server Error',
+  return new AppError('Internal Server Error', 500, { code: 'INTERNAL_ERROR' });
+}
+
+export const errorHandler = (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  const appErr = toPublicError(err);
+
+  // Log the real error; return a safe payload to clients.
+  console.error(err);
+
+  res.status(appErr.statusCode).json({
+    message: appErr.message,
+    error: {
+      message: appErr.message,
+      code: appErr.code ?? 'UNKNOWN_ERROR',
+      details: appErr.details,
+    },
   });
 };

@@ -1,8 +1,9 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { Shop } from '../models/Shop';
 import { Product } from '../models/Product';
+import { AppError } from '../errors/AppError';
 
-export async function getAllShops(req: Request, res: Response): Promise<void> {
+export async function getAllShops(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { minRating, maxRating } = req.query;
     const filter: Record<string, unknown> = {};
@@ -16,24 +17,28 @@ export async function getAllShops(req: Request, res: Response): Promise<void> {
     const shops = await Shop.find(filter).sort({ name: 1 });
     res.json(shops);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch shops', error });
+    next(error);
   }
 }
 
-export async function getShopById(req: Request, res: Response): Promise<void> {
+export async function getShopById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const shop = await Shop.findById(req.params.id);
-    if (!shop) { res.status(404).json({ message: 'Shop not found' }); return; }
+    if (!shop) {
+      throw new AppError('Shop not found', 404, { code: 'NOT_FOUND' });
+    }
     res.json(shop);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch shop', error });
+    next(error);
   }
 }
 
-export async function getProductsByShop(req: Request, res: Response): Promise<void> {
+export async function getProductsByShop(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const shop = await Shop.findById(req.params.id);
-    if (!shop) { res.status(404).json({ message: 'Shop not found' }); return; }
+    if (!shop) {
+      throw new AppError('Shop not found', 404, { code: 'NOT_FOUND' });
+    }
 
     const { categories, sort, page, limit } = req.query;
 
@@ -69,6 +74,6 @@ export async function getProductsByShop(req: Request, res: Response): Promise<vo
       },
     });
   } catch (error) {
-    res.status(500).json({ message: 'Failed to fetch products', error });
+    next(error);
   }
 }

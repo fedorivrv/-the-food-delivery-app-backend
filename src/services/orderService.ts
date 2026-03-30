@@ -3,13 +3,18 @@ import { Product } from '../models/Product';
 import { AppError } from '../errors/AppError';
 import mongoose from 'mongoose';
 
+type CreateOrderInput = {
+  items: Array<{ productId: string; quantity: number }>;
+  customerInfo: { name: string; email: string; phone: string; address: string };
+};
+
 // 🧾 CREATE ORDER 
-export const createOrder = async (data: any) => {
+export const createOrder = async (data: CreateOrderInput) => {
   if (!data.items || data.items.length === 0) {
     throw new AppError('Order must contain at least one item', 400);
   }
 
-  const productIds = data.items.map((item: any) => item.productId);
+  const productIds = data.items.map((item) => item.productId);
 
   const products = await Product.find({
     _id: { $in: productIds },
@@ -19,7 +24,7 @@ export const createOrder = async (data: any) => {
     throw new AppError('Some products not found', 400);
   }
 
-  const itemsWithSnapshot = data.items.map((item: any) => {
+  const itemsWithSnapshot = data.items.map((item) => {
     const product = products.find(
       (p) => p._id.toString() === item.productId
     );
@@ -32,7 +37,7 @@ export const createOrder = async (data: any) => {
       productId: product._id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      imageUrl: product.imageUrl,
       quantity: item.quantity,
     };
   });
